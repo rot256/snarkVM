@@ -145,9 +145,9 @@ impl<F: PrimeField, MM: SNARKMode> AHPForR1CS<F, MM> {
 
         crate::snark::varuna::ahp::matrices::pad_input_for_indexer_and_prover(&mut ics);
 
-        let a = ics.a_matrix();
-        let b = ics.b_matrix();
-        let c = ics.c_matrix();
+        let a = ics.a_matrix()?;
+        let b = ics.b_matrix()?;
+        let c = ics.c_matrix()?;
 
         end_timer!(padding_time);
 
