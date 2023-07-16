@@ -229,10 +229,13 @@ impl<E: Environment, I: IntegerType> Metrics<dyn MulChecked<Integer<E, I>, Outpu
                     (_, _, _, _) => Count::is(3 * I::BITS, 0, (9 * I::BITS) + 7, (10 * I::BITS) + 13),
                 },
                 // Unsigned case
-                false => match (case.0, case.1) {
-                    (Mode::Constant, Mode::Constant) => Count::is(I::BITS, 0, 0, 0),
-                    (Mode::Constant, _) | (_, Mode::Constant) => Count::is(0, 0, 2 * I::BITS, (3 * I::BITS) + 1),
-                    (_, _) => Count::is(0, 0, 2 * I::BITS + 1, (3 * I::BITS) + 2),
+                false => match (case.0, case.1, case.2, case.3) {
+                    (Mode::Constant, Mode::Constant, _, _) => Count::is(I::BITS, 0, 0, 0),
+                    (Mode::Constant, _, true, _) | (_, Mode::Constant, _, true) => Count::is(2 * I::BITS, 0, 0, 0),
+                    (Mode::Constant, _, false, _) | (_, Mode::Constant, _, false) => {
+                        Count::is(0, 0, 2 * I::BITS, (3 * I::BITS) + 1)
+                    }
+                    (_, _, _, _) => Count::is(0, 0, 2 * I::BITS + 1, (3 * I::BITS) + 2),
                 },
             }
         }
@@ -240,16 +243,20 @@ impl<E: Environment, I: IntegerType> Metrics<dyn MulChecked<Integer<E, I>, Outpu
         else if (I::BITS + I::BITS / 2) < (E::BaseField::size_in_bits() - 1) as u64 {
             match I::is_signed() {
                 // Signed case
-                true => match (case.0, case.1) {
-                    (Mode::Constant, Mode::Constant) => Count::is(I::BITS, 0, 0, 0),
-                    (Mode::Constant, _) | (_, Mode::Constant) => Count::is(4 * I::BITS, 0, 965, 1164),
-                    (_, _) => Count::is(3 * I::BITS, 0, 1227, 1427),
+                true => match (case.0, case.1, case.2, case.3) {
+                    (Mode::Constant, Mode::Constant, _, _) => Count::is(I::BITS, 0, 0, 0),
+                    (Mode::Constant, _, true, _) | (_, Mode::Constant, _, true) => Count::is(4 * I::BITS, 0, 965, 1164),
+                    (Mode::Constant, _, false, _) | (_, Mode::Constant, _, false) => {
+                        Count::is(4 * I::BITS, 0, 965, 1164)
+                    }
+                    (_, _, _, _) => Count::is(3 * I::BITS, 0, 1227, 1427),
                 },
                 // Unsigned case
-                false => match (case.0, case.1) {
-                    (Mode::Constant, Mode::Constant) => Count::is(I::BITS, 0, 0, 0),
-                    (Mode::Constant, _) | (_, Mode::Constant) => Count::is(0, 0, 321, 516),
-                    (_, _) => Count::is(0, 0, 325, 520),
+                false => match (case.0, case.1, case.2, case.3) {
+                    (Mode::Constant, Mode::Constant, _, _) => Count::is(I::BITS, 0, 0, 0),
+                    (Mode::Constant, _, true, _) | (_, Mode::Constant, _, true) => Count::is(0, 0, 321, 516),
+                    (Mode::Constant, _, false, _) | (_, Mode::Constant, _, false) => Count::is(0, 0, 321, 516),
+                    (_, _, _, _) => Count::is(0, 0, 325, 520),
                 },
             }
         } else {
