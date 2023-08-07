@@ -423,9 +423,14 @@ impl<F: PrimeField> Mul<&F> for LinearCombination<F> {
     fn mul(self, coefficient: &F) -> Self::Output {
         let mut output = self;
         output.constant *= coefficient;
-        output.terms.iter_mut().for_each(|(_, current_coefficient)| *current_coefficient *= coefficient);
-        // If the coefficient of terms are now zero, remove the entries.
-        output.terms = output.terms.into_iter().filter(|(_, v)| *v != F::zero()).collect();
+        output.terms = output
+            .terms
+            .into_iter()
+            .filter_map(|(v, current_coefficient)| {
+                let res = current_coefficient * coefficient;
+                (!res.is_zero()).then(|| (v, res))
+            })
+            .collect();
         output.value *= coefficient;
         output
     }
