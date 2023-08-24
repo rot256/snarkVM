@@ -217,7 +217,7 @@ impl<F: PrimeField, MM: SNARKMode> AHPForR1CS<F, MM> {
         Ok((h_1_sum, xg_1_sum, msg))
     }
 
-    fn calculate_assignments(state: &mut prover::State<F, MM>) -> Result<BTreeMap<CircuitId, Vec<DensePolynomial<F>>>> {
+    pub fn calculate_assignments(state: &prover::State<F, MM>) -> Result<BTreeMap<CircuitId, Vec<DensePolynomial<F>>>> {
         let assignments_time = start_timer!(|| "Calculate assignments");
         let assignments: BTreeMap<_, _> = state
             .circuit_specific_states
@@ -230,6 +230,8 @@ impl<F: PrimeField, MM: SNARKMode> AHPForR1CS<F, MM> {
                     .zip_eq(x_polys)
                     .enumerate()
                     .map(|(_j, (w_poly, x_poly))| {
+                        println!("w_poly: {:?}", w_poly);
+                        println!("x_poly: {:?}", x_poly);
                         let z_time = start_timer!(move || format!("Compute z poly for circuit {} {}", circuit.id, _j));
                         let mut assignment =
                             w_poly.0.polynomial().as_dense().unwrap().mul_by_vanishing_poly(*input_domain);
@@ -247,7 +249,7 @@ impl<F: PrimeField, MM: SNARKMode> AHPForR1CS<F, MM> {
     }
 
     fn calculate_matrix_transpose(
-        state: &mut prover::State<F, MM>,
+        state: &prover::State<F, MM>,
     ) -> Result<BTreeMap<CircuitId, BTreeMap<String, Matrix<F>>>> {
         let transpose_time = start_timer!(|| "Transpose of matrices");
         let mut job_pool = ExecutionPool::with_capacity(state.circuit_specific_states.len() * 3);

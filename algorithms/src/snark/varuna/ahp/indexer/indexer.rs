@@ -66,6 +66,10 @@ impl<F: PrimeField, MM: SNARKMode> AHPForR1CS<F, MM> {
         } = Self::index_helper(c).map_err(|e| anyhow!("{e:?}"))?;
         let joint_arithmetization_time = start_timer!(|| format!("Arithmetizing A,B,C {id}"));
 
+        println!("a: {:?}", a);
+        println!("b: {:?}", b);
+        println!("c: {:?}", c);
+
         let [a_arith, b_arith, c_arith]: [_; 3] = [("a", a_evals), ("b", b_evals), ("c", c_evals)]
             .into_iter()
             .map(|(label, evals)| arithmetize_matrix(&id, label, evals))
