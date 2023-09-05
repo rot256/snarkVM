@@ -245,13 +245,13 @@ impl<E: Environment, I: IntegerType> Metrics<dyn MulChecked<Integer<E, I>, Outpu
                 // Signed case
                 true => match (case.0, case.1) {
                     (Mode::Constant, Mode::Constant) => Count::is(I::BITS, 0, 0, 0),
-                    (Mode::Constant, _) | (_, Mode::Constant) => Count::is(4 * I::BITS, 0, 965, 1164),
+                    (Mode::Constant, _) | (_, Mode::Constant) => Count::less_than(8 * I::BITS, 0, 965, 1164),
                     (_, _) => Count::is(3 * I::BITS, 0, 1227, 1427),
                 },
                 // Unsigned case
                 false => match (case.0, case.1) {
                     (Mode::Constant, Mode::Constant) => Count::is(I::BITS, 0, 0, 0),
-                    (Mode::Constant, _) | (_, Mode::Constant) => Count::is(0, 0, 321, 516),
+                    (Mode::Constant, _) | (_, Mode::Constant) => Count::less_than(3 * I::BITS, 0, 321, 516),
                     (_, _) => Count::is(0, 0, 325, 520),
                 },
             }

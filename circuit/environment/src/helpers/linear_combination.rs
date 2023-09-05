@@ -428,7 +428,7 @@ impl<F: PrimeField> Mul<&F> for LinearCombination<F> {
             .into_iter()
             .filter_map(|(v, current_coefficient)| {
                 let res = current_coefficient * coefficient;
-                (!res.is_zero()).then(|| (v, res))
+                (!res.is_zero()).then_some((v, res))
             })
             .collect();
         output.value *= coefficient;
