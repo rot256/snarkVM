@@ -23,7 +23,7 @@ use std::collections::BTreeMap;
 #[derive(Clone)]
 pub struct ProvingKey<N: Network> {
     /// The proving key for the function.
-    proving_key: Arc<varuna::CircuitProvingKey<N::PairingCurve, varuna::VarunaHidingMode>>,
+    pub proving_key: Arc<varuna::CircuitProvingKey<N::PairingCurve, varuna::VarunaHidingMode>>,
 }
 
 impl<N: Network> ProvingKey<N> {

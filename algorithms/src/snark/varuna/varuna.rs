@@ -15,31 +15,17 @@
 use super::Certificate;
 use crate::{
     fft::EvaluationDomain,
-    polycommit::sonic_pc::{
-        Commitment,
-        CommitterUnionKey,
-        Evaluations,
-        LabeledCommitment,
-        QuerySet,
-        Randomness,
-        SonicKZG10,
+    polycommit::{
+        kzg10::VerifierKey,
+        sonic_pc::{Commitment, CommitterUnionKey, Evaluations, LabeledCommitment, QuerySet, Randomness, SonicKZG10},
     },
     r1cs::{ConstraintSynthesizer, SynthesisError},
     snark::varuna::{
         ahp::{AHPError, AHPForR1CS, CircuitId, EvaluationsProvider},
-        proof,
-        prover,
-        witness_label,
-        CircuitProvingKey,
-        CircuitVerifyingKey,
-        Proof,
-        SNARKMode,
-        UniversalSRS,
+        proof, prover, witness_label, CircuitProvingKey, CircuitVerifyingKey, Proof, SNARKMode, UniversalSRS,
     },
     srs::UniversalVerifier,
-    AlgebraicSponge,
-    SNARKError,
-    SNARK,
+    AlgebraicSponge, SNARKError, SNARK,
 };
 use rand::RngCore;
 use snarkvm_curves::PairingEngine;
@@ -186,6 +172,44 @@ impl<E: PairingEngine, FS: AlgebraicSponge<E::Fq, 2>, MM: SNARKMode> VarunaSNARK
     }
 }
 
+impl<E: PairingEngine, FS, MM> VarunaSNARK<E, FS, MM>
+where
+    E::Fr: PrimeField,
+    E::Fq: PrimeField,
+    FS: AlgebraicSponge<E::Fq, 2>,
+    MM: SNARKMode,
+{
+    pub fn attack_challenges<C: ConstraintSynthesizer<E::Fr>>(
+        fs_parameters: &FS::Parameters,
+        verifying_key: &CircuitVerifyingKey<E>,
+        circuit: &C,
+    ) -> Result<(E::Fr, Vec<E::Fr>, E::Fr, CircuitId), SNARKError> {
+        // Initialize sponge
+        let mut sponge = Self::init_sponge_for_certificate(fs_parameters, &verifying_key.circuit_commitments);
+        // Compute challenges for linear combination, and the point to evaluate the polynomials at.
+        // The linear combination requires `num_polynomials - 1` coefficients
+        // (since the first coeff is 1), and so we squeeze out `num_polynomials` points.
+        let mut challenges = sponge.squeeze_nonnative_field_elements(verifying_key.circuit_commitments.len());
+        let point = challenges.pop().unwrap();
+        let one = E::Fr::one();
+        let linear_combination_challenges = core::iter::once(&one).chain(challenges.iter());
+
+        // Ensure the VerifyingKey encodes the expected circuit.
+        let circuit_id = &verifying_key.id;
+        let state = AHPForR1CS::<E::Fr, MM>::index_helper(circuit)?;
+        let id = state.id;
+
+        // We will construct a linear combination and provide a proof of evaluation of the lc at `point`.
+        let evaluations_at_point = AHPForR1CS::<E::Fr, MM>::evaluate_index_polynomials(state, circuit_id, point)?;
+        let mut evaluation = E::Fr::zero();
+        for (&c, eval) in linear_combination_challenges.clone().zip_eq(evaluations_at_point) {
+            evaluation += c * eval;
+        }
+
+        Ok((point, linear_combination_challenges.copied().collect(), evaluation, id))
+    }
+}
+
 impl<E: PairingEngine, FS, MM> SNARK for VarunaSNARK<E, FS, MM>
 where
     E::Fr: PrimeField,
@@ -240,10 +264,12 @@ where
         let point = challenges.pop().unwrap();
         let one = E::Fr::one();
         let linear_combination_challenges = core::iter::once(&one).chain(challenges.iter());
+        println!("x: {:?}", point);
 
         // We will construct a linear combination and provide a proof of evaluation of the lc at `point`.
         let mut lc = crate::polycommit::sonic_pc::LinearCombination::empty("circuit_check");
         for (poly, &c) in proving_key.circuit.iter().zip(linear_combination_challenges) {
+            println!("chal: {:?}", c);
             lc.add(c, poly.label());
         }
 
@@ -288,6 +314,7 @@ where
             return Err(SNARKError::CircuitNotFound);
         }
         if state.id != *circuit_id {
+            println!("state.id: {:?}. circuit_id: {:?}", state.id, circuit_id);
             return Err(SNARKError::CircuitNotFound);
         }
 

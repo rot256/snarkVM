@@ -23,7 +23,7 @@ use std::collections::BTreeMap;
 #[derive(Clone, PartialEq, Eq)]
 pub struct VerifyingKey<N: Network> {
     /// The verifying key for the function.
-    verifying_key: Arc<varuna::CircuitVerifyingKey<N::PairingCurve>>,
+    pub verifying_key: Arc<varuna::CircuitVerifyingKey<N::PairingCurve>>,
 }
 
 impl<N: Network> VerifyingKey<N> {
@@ -52,6 +52,7 @@ impl<N: Network> VerifyingKey<N> {
                 is_valid
             }
             Err(error) => {
+                println!("error: {}", error);
                 #[cfg(feature = "aleo-cli")]
                 println!("{}", format!(" • Verifier failed: {error}").dimmed());
                 false
